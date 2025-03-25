@@ -12,10 +12,10 @@ RUN apt-get install -y xvfb xauth
 RUN apt-get install -y zip
 
 # Copie o arquivo requirements.txt para o diretório de trabalho
-COPY requirements.txt .
+COPY requirements .
 
 # Instale as dependências do Python
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements
 
 # Defina o diretório de trabalho dentro do contêiner
 WORKDIR /app
