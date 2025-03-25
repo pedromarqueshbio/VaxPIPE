@@ -9,7 +9,7 @@ RUN pip install selenium
 # Install xvfb and xauth packages
 RUN apt-get install -y xvfb xauth
 
-RUN apt-get install -y zip
+RUN apt-get install -y zip docker*
 
 # Copie o arquivo requirements.txt para o diretório de trabalho
 COPY requirements .
