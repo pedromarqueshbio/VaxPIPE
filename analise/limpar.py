@@ -70,7 +70,7 @@ def enviar_email():
 
 def apagar_arquivos():
     diretorio_atual = os.getcwd()
-    extensoes = ['.txt', '.csv', '.faa', '.png', 'str', 'zip']
+    extensoes = ['.txt', '.csv', '.faa', '.png', 'str', 'zip', 'tsv', 'sh']
     for arquivo in os.listdir(diretorio_atual):
         # Verificar se o arquivo tem uma das extensões a serem excluídas
         if any(arquivo.endswith(extensao) for extensao in extensoes):
