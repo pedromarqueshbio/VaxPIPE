@@ -767,7 +767,7 @@ def predicao(data):
     # Passo 2: Baixar o script VaxignML.sh
     def download_script():
         print("Baixando o script VaxignML.sh...")
-        run_command(["wget", "https://raw.githubusercontent.com/VIOLINet/Vaxign-ML-docker/master/VaxignML.sh"])
+        run_command(["wget", "--no-check-certificate" , "https://raw.githubusercontent.com/VIOLINet/Vaxign-ML-docker/master/VaxignML.sh"])
 
     # Passo 3: Dar permissão de execução no script
     def make_script_executable():
