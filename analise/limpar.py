@@ -26,12 +26,16 @@ def enviar_email():
         # Ler destinatário do arquivo
         with open("email.str", "r") as email_file:
             email_content = email_file.read().strip()
+        
+        # Ler nome da análise
+        with open ("analysisname.str", "r") as analysisname_file:
+            analysisname = analysisname_file.read().strip()
 
         # Criar mensagem
         mensagem = Mail(
             from_email="info@satyasistemas.com.br",
             to_emails=email_content,
-            subject="VaxPIPE Results",
+            subject = f"VaxPIPE Results - Analysis: {analysisname} ({datetime.datetime.now().strftime('%Y-%m-%d')})",
             plain_text_content="VaxPIPE Results\nThanks for using"
         )
 
