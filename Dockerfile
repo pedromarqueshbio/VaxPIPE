@@ -1,32 +1,37 @@
 FROM python:3.9
 
-# Install Firefox and other dependencies
-RUN apt-get update && apt-get install -y firefox-esr xvfb
+# Instalar dependências para o Docker-in-Docker
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    firefox-esr \
+    xvfb \
+    xauth \
+    curl \
+    zip \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
+# Instalar o Selenium
 RUN pip install selenium
 
-# Install xvfb and xauth packages
-RUN apt-get install -y xvfb xauth
+# Baixar e instalar o geckodriver (necessário para o selenium com Firefox)
+RUN curl -sSL https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz | tar -xz -C /usr/local/bin
 
-RUN apt-get install -y zip docker*
-
-# Copie o arquivo requirements.txt para o diretório de trabalho
+# Copiar o arquivo requirements para o diretório de trabalho
 COPY requirements .
 
-# Instale as dependências do Python
+# Instalar as dependências do Python
 RUN pip install --no-cache-dir -r requirements
 
-# Defina o diretório de trabalho dentro do contêiner
+# Definir o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
-# Copie o restante dos arquivos do aplicativo para o diretório de trabalho
+# Copiar o restante dos arquivos do aplicativo para o diretório de trabalho
 COPY . .
 
-# Exponha a porta em que o Django está sendo executado
+# Expor a porta em que o Django estará sendo executado
 EXPOSE 8000
 
 # Comando para iniciar o servidor Django quando o contêiner for iniciado
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
 
