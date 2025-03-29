@@ -843,7 +843,6 @@ def predicao(data):
 
     # Salvar como CSV
     df.to_csv("Chimeric_result.csv", index=False)
-
     print("Conversão concluída: Chimeric.result.tsv -> Chimeric_result.csv")
 
     # 9.1.2 Vaxijen proteins filtering
