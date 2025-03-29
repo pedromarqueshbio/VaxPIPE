@@ -753,12 +753,31 @@ def predicao(data):
     # 9.1 Selection of the chimeric model with the highest antigenicity by VaxignML
     # 9.1.1 VaxignML accesion
 
+    def wait_for_file(filename, timeout=300, check_interval=5):
+        """
+        Aguarda até que um arquivo seja criado.
+        
+        :param filename: Nome do arquivo a ser verificado.
+        :param timeout: Tempo máximo de espera em segundos (padrão: 300s).
+        :param check_interval: Intervalo entre verificações (padrão: 5s).
+        :return: True se o arquivo foi encontrado, False se o tempo limite foi atingido.
+        """
+        elapsed_time = 0
+        while not os.path.exists(filename):
+            if elapsed_time >= timeout:
+                print(f"Tempo limite atingido. O arquivo {filename} não foi encontrado.")
+                return False
+            time.sleep(check_interval)
+            elapsed_time += check_interval
+        print(f"Arquivo {filename} encontrado!")
+        return True
+
     # Função para rodar um comando e capturar a saída
     def run_command(command):
         print(f"Executando o comando: {' '.join(command)}")
         result = subprocess.run(command, capture_output=True, text=True)
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
+        print("Info:", result.stdout)
+        print("Info:", result.stderr)
 
         if result.returncode != 0:
             raise Exception(f"Erro ao executar o comando: {command}\nCódigo de saída: {result.returncode}")
@@ -766,7 +785,6 @@ def predicao(data):
     def docker_pull():
         print("Baixando a imagem Docker...")
         try:
-            run_command(["whoami"])
             run_command(["sudo", "sh", "-c", "docker pull e4ong1031/vaxign-ml:latest"])
         except Exception as e:
             print(f"Erro ao rodar docker pull: {e}")
@@ -789,13 +807,13 @@ def predicao(data):
             
             print(f"VaxignML iniciado com PID: {process.pid}")
 
-            # Espera 2 segundos e verifica se o processo ainda está rodando
+            # Espera 10 segundos e verifica se o processo ainda está rodando
             import time
-            time.sleep(2)
+            time.sleep(10)
             
             retcode = process.poll()
             if retcode is None:
-                print("O processo ainda está rodando!")
+                print("O processo está sendo executado!")
             else:
                 print(f"O processo terminou rapidamente com código: {retcode}")
             
@@ -815,7 +833,10 @@ def predicao(data):
     make_script_executable()
     run_vaxignml_script(input_fasta, output_directory, organism_type)
     
-    time.sleep(180)
+    if wait_for_file("Chimeric.result.tsv"):
+        print("Prosseguindo com a execução...")
+    else:
+        print("Encerrando devido à ausência do arquivo.")
 
     # Carregar o arquivo TSV
     df = pd.read_csv("Chimeric.result.tsv", sep="\t")
