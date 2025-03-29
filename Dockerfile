@@ -1,37 +1,57 @@
-FROM python:3.9
+FROM docker:dind
 
-# Instalar dependências para o Docker-in-Docker
-RUN apt-get update && apt-get install -y \
-    docker.io \
-    firefox-esr \
+# Evitar prompts interativos na instalação
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Atualizar pacotes e instalar dependências do sistema
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    py3-virtualenv \
     xvfb \
     xauth \
     curl \
+    wget \
     zip \
     sudo \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    gnupg \
+    fuse-overlayfs \
+    bash \
+    firefox \
+    build-base \
+    python3-dev \
+    libffi-dev \
+    musl-dev \
+    openssl-dev \
+    lapack-dev \
+    freetype-dev \
+    libpng-dev \
+    openblas-dev \
+    libxml2-dev \
+    libxslt-dev \
+    jpeg-dev \
+    zlib-dev
 
-# Instalar o Selenium
-RUN pip install selenium
+RUN pip3 install --no-cache-dir selenium --break-system-packages
 
-# Baixar e instalar o geckodriver (necessário para o selenium com Firefox)
-RUN curl -sSL https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz | tar -xz -C /usr/local/bin
 
-# Copiar o arquivo requirements para o diretório de trabalho
+# Baixar e instalar o geckodriver (necessário para Selenium + Firefox)
+RUN curl -sSL https://github.com/mozilla/geckodriver/releases/download/v0.36.0/geckodriver-v0.36.0-linux64.tar.gz | tar -xz -C /usr/local/bin
+
+# Definir o diretório de trabalho
+WORKDIR /vaxpipe
+
+# Copiar e instalar dependências do Python
 COPY requirements .
-
-# Instalar as dependências do Python
-RUN pip install --no-cache-dir -r requirements
-
-# Definir o diretório de trabalho dentro do contêiner
-WORKDIR /app
+RUN pip3 install --no-cache-dir -r requirements --break-system-packages
 
 # Copiar o restante dos arquivos do aplicativo para o diretório de trabalho
 COPY . .
 
-# Expor a porta em que o Django estará sendo executado
+# Expor a porta do Django
 EXPOSE 8000
 
-# Comando para iniciar o servidor Django quando o contêiner for iniciado
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Iniciar o Docker dentro do contêiner e rodar o Django
+CMD ["sh", "-c", "dockerd-entrypoint.sh & sleep 3 && python manage.py runserver 0.0.0.0:8000"]
 

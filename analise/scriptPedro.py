@@ -755,14 +755,21 @@ def predicao(data):
 
     # Função para rodar um comando e capturar a saída
     def run_command(command):
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
-        print(result.stdout)
-        print(result.stderr)
+        print(f"Executando o comando: {' '.join(command)}")
+        result = subprocess.run(command, capture_output=True, text=True)
+        print("STDOUT:", result.stdout)
+        print("STDERR:", result.stderr)
 
-    # Passo 1: Docker Pull
+        if result.returncode != 0:
+            raise Exception(f"Erro ao executar o comando: {command}\nCódigo de saída: {result.returncode}")
+
     def docker_pull():
         print("Baixando a imagem Docker...")
-        run_command(["docker", "pull", "e4ong1031/vaxign-ml:latest"])
+        try:
+            run_command(["whoami"])
+            run_command(["sudo", "sh", "-c", "docker pull e4ong1031/vaxign-ml:latest"])
+        except Exception as e:
+            print(f"Erro ao rodar docker pull: {e}")
 
     # Passo 2: Baixar o script VaxignML.sh
     def download_script():
@@ -808,7 +815,7 @@ def predicao(data):
     make_script_executable()
     run_vaxignml_script(input_fasta, output_directory, organism_type)
     
-    time.sleep(300)
+    time.sleep(180)
 
     # Carregar o arquivo TSV
     df = pd.read_csv("Chimeric.result.tsv", sep="\t")
@@ -821,6 +828,7 @@ def predicao(data):
     # 9.1.2 Vaxijen proteins filtering
 
     # 1. Ler e processar o TSV
+    print("Leitura e processamento do TSV")
     VaxFinal = pd.read_csv("Chimeric.result.tsv", sep="\t")
     VaxFinal.columns = VaxFinal.columns.str.strip()  # Remover espaços dos cabeçalhos
     VaxFinal["protegenicity"] = VaxFinal["protegenicity"].astype(float)  # Garantir que seja float
@@ -829,6 +837,7 @@ def predicao(data):
     VaxFinal1 = VaxFinal.sort_values(by="protegenicity", ascending=False)
 
     # 3. Salvar a amostra com maior protegenicity
+    print("Salvando amostra com maior protegenicity")
     VaxModelName = VaxFinal1[["sample"]]
     VaxModelName.to_csv("Vaxijen.txt", header=False, index=False)
 
@@ -864,6 +873,7 @@ def predicao(data):
         leituradotrem = semcabeca.read()
     
     #10.0 Allertop prediction
+    print("Allertop prediction")
     navegadorALLER = webdriver.Firefox(options=firefox_options)
     navegadorALLER.get("https://allercatpro.bii.a-star.edu.sg/")    
     navegadorALLER.find_element(By.XPATH, '//*[@id="seq"]').send_keys(">Multi-epitope\n" + leituradotrem)
@@ -875,6 +885,7 @@ def predicao(data):
     navegadorALLER.save_screenshot("Allertop.png")
 
     #11.0 ProtParam prediction
+    print("ProtParam prediction")
     navegadorALLER.get("https://web.expasy.org/protparam/")
     time.sleep(10)    
     navegadorALLER.find_element(By.XPATH, '/html/body/main/div/form/textarea').send_keys(leituradotrem)
@@ -886,6 +897,7 @@ def predicao(data):
     vamoslerisso3 = vamoslerisso2.text
 
     #12.0 PSIPRED prediction
+    print("PSIPRED prediction")
     navegadorALLER.get("http://bioinf.cs.ucl.ac.uk/psipred/")
     time.sleep(10)
     navegadorALLER.find_element(By.XPATH, '//*[@id="id_job_name"]').send_keys("VaxG")
@@ -906,6 +918,7 @@ def predicao(data):
 
     ###############
     # First Image Generation
+    print("Gerando primeira imagem")
     from PIL import Image, ImageDraw, ImageFont 
 
     with open('Your_Final_Epitopes.txt', 'r') as arquivo:
@@ -930,6 +943,7 @@ def predicao(data):
     listaparaimagem = lista_epitopos_maior_11_ordenada + lista_epitopos_menor_11_ordenada
 
     # Função para criar a imagem com os epitopos e os linkers
+    print("Criando iamgem com os epitopos e linkers")
     def criar_imagem_epitopos(partes, adjuvante_texto=""):
         margem = 10 
         altura_retangulo = 50 
@@ -995,6 +1009,7 @@ def predicao(data):
 
     ###############
     # Second Image Generation
+    print("Gerando segunda imagem")
     #Sum of the total value of the epitopes by step
     somatoriadas = pd.read_csv('output.csv')
     somas_colunas = somatoriadas.sum()
@@ -1123,6 +1138,7 @@ def predicao(data):
 
 
     ### ZIPPING mhcintermediaries files
+    print("Salvando arquivos intermediarios")
     caminho_pasta_atual = os.getcwd()
     nome_arquivo_zip = "MHCintermediariesFILES.zip"
 
@@ -1133,6 +1149,7 @@ def predicao(data):
                 arquivo_zip.write(caminho_completo, nome_arquivo)
 
     #Saving the results into one zip file
+    print("Salvando os resultados finais")
     z = zipfile.ZipFile('Final.zip', 'w', zipfile.ZIP_DEFLATED)
     z.write('Allertop.png')
     z.write('Chimeric.faa')

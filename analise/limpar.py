@@ -13,7 +13,6 @@ sendgrid_api_key = os.getenv("SENDGRID_API_KEY")
 
 def enviar_email():
     try:
-        print(sendgrid_api_key)
         # Gerar novo nome para o arquivo
         agora = datetime.datetime.now()
         data_atual = agora.strftime('%d-%m-%Y')
