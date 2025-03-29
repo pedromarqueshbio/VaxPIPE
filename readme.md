@@ -18,7 +18,7 @@
 
 And then:
 
-•	***docker run -d -p 8000:8000 openheimerfinger/vaxg:beta***
+•	***docker run --privileged -p 8000:8000 --name vaxpipe --user root -it openheimerfinger/vaxg:beta***
 
 After that, just go to the following link in your browser:
 
