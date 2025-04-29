@@ -7,17 +7,61 @@
 #     Version 1.0                                         #                                      
 ###########################################################
 #Librarys and modules
-import os, pandas as pd, selenium, shutil, random, zipfile, time
+import os, pandas as pd, selenium, shutil, random, zipfile, time, subprocess, threading
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from django.shortcuts import redirect
+
 
 
 proteinas_lista = []
 
-if os.path.exists("requirements.txt"):
-    os.remove("requirements.txt")
+# Lista dos arquivos a serem verificados e removidos
+arquivos_para_apagar = [
+    "Chimeric.faa",
+    "Chimeric.input.tsv",
+    "Chimeric.result.tsv",
+    "Chimeric_result.csv",
+    "FinalEpitopes.txt",
+    "MHCII_Epitopes_1.txt",
+    "MHCII_Epitopes_2.txt",
+    "MHCII_Epitopes_3.txt",
+    "MHCI_Epitopes_1.txt",
+    "MHCI_Epitopes_2.txt",
+    "MHCI_Epitopes_3.txt",
+    "ResultCluster1.csv",
+    "ResultCluster1.txt",
+    "ResultCluster2.csv",
+    "ResultCluster2.txt",
+    "VaxignML.sh",
+    "Your_Final_Epitopes.txt",
+    "analise/__pycache__/limpar.cpython-312.pyc",
+    "cluster1.txt",
+    "cluster2.txt",
+    "email.str",
+    "greaterthan11.txt",
+    "laststep.txt",
+    "lessthan11.txt",
+    "output.csv",
+    "Allertop.png",
+    "Final.zip",
+    "FinalSemCabeca.txt",
+    "MHCintermediariesFILES.zip",
+    "ProtParam.txt",
+    "ProtParam.txt",
+    "PsiPred.txt",
+    "YourFinalModel.faa",
+    "flowchart.png",
+    "sequence.png"
+]
+
+# Remover os arquivos se existirem
+for arquivo in arquivos_para_apagar:
+    if os.path.exists(arquivo):
+        os.remove(arquivo)
+        print(f"Arquivo removido: {arquivo}") 
 
 #1.0 - First module - comunication with the HTML
 def dataform(data_dict):
@@ -172,7 +216,7 @@ def predicao(data):
         #2.3.2 Getting elements
         nav.find_element(By.XPATH, '/html/body/form/font/textarea').send_keys(targets)
         nav.find_element(By.XPATH,'/html/body/form/p[2]/input[2]').click()
-        time.sleep(5)
+        time.sleep(15)
         #2.3.3 Storing results
         tabeladonav = nav.find_element(By.XPATH, '/html/body/pre[2]/table/tbody')
         lernav = tabeladonav.text
@@ -706,88 +750,142 @@ def predicao(data):
     with open(r'Chimeric.faa', 'w') as file:
         file.write(data)
 
-    # 9.1 Selection of the chimeric model with the highest antigenicity by Vaxijen
-    # 9.1.1 Vaxijen accesion
-    # Configurar o user-agent (TENTATIVA DE BURLAR O SISTEMA DO ANTIBOT)
-    firefox_options1 = Options()
-    firefox_options1.add_argument("--headless")  # Rodar em modo headless
-    firefox_options1.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+    # 9.1 Selection of the chimeric model with the highest antigenicity by VaxignML
+    # 9.1.1 VaxignML accesion
 
-    # Configurar cabeçalhos adicionais
-    capabilities = DesiredCapabilities.FIREFOX
-    capabilities["marionette"] = True
-    capabilities["acceptInsecureCerts"] = True
+    def wait_for_file(filename, timeout=300, check_interval=5):
+        """
+        Aguarda até que um arquivo seja criado.
+        
+        :param filename: Nome do arquivo a ser verificado.
+        :param timeout: Tempo máximo de espera em segundos (padrão: 300s).
+        :param check_interval: Intervalo entre verificações (padrão: 5s).
+        :return: True se o arquivo foi encontrado, False se o tempo limite foi atingido.
+        """
+        elapsed_time = 0
+        while not os.path.exists(filename):
+            if elapsed_time >= timeout:
+                print(f"Tempo limite atingido. O arquivo {filename} não foi encontrado.")
+                return False
+            time.sleep(check_interval)
+            elapsed_time += check_interval
+        print(f"Arquivo {filename} encontrado!")
+        return True
 
-    navegador10 = webdriver.Firefox(options=firefox_options1, capabilities=capabilities)
-    navegador10.get("http://www.ddg-pharmfac.net/vaxijen/VaxiJen/VaxiJen.html")
-    time.sleep(8)    
-    navegador10.find_element(By.XPATH, "/html/body/div/table/tbody/tr[4]/td[3]/form/table/tbody/tr[1]/td[2]/p/input").send_keys(os.getcwd()+"/Chimeric.faa")
-    time.sleep(8)
-    navegador10.find_element(By.XPATH, '/html/body/div/table/tbody/tr[4]/td[3]/form/table/tbody/tr[2]/td[2]/p/input[1]').click()
-    navegador10.find_element(By.XPATH, '/html/body/div/table/tbody/tr[4]/td[3]/form/table/tbody/tr[2]/td[2]/p/input[3]').click()
-    navegador10.find_element(By.XPATH, '/html/body/div/table/tbody/tr[4]/td[3]/form/table/tbody/tr[3]/td[2]/input[1]').click()
-    time.sleep(50)
-    Leituradonavegador10 = navegador10.find_element(By.XPATH, '/html/body/div/table/tbody/tr[4]/td[3]/table/tbody/tr/td')
-    lernavegador1 = Leituradonavegador10.text
-    print(lernavegador1)
-    navegador10.close()
-    with open("VaxijenResults.txt", "w") as fumar1:
-        fumar1.writelines(lernavegador1)
-    buscartexto10 = " Overall Protective Antigen Prediction = "
-    buscartexto101 = " ( Probable ANTIGEN )."
-    new_text10 = ""
-    with open("VaxijenResults.txt","r") as trocadetxt:
-        dataler10 = trocadetxt.read()
-        dataler10 = dataler10.replace(buscartexto10, new_text10)
-        dataler10 = dataler10.replace(buscartexto101, new_text10)
-    with open("VaxijenResults.txt", "w") as filezinho:
-        filezinho.write(dataler10)
+    # Função para rodar um comando e capturar a saída
+    def run_command(command):
+        print(f"Executando o comando: {' '.join(command)}")
+        result = subprocess.run(command, capture_output=True, text=True)
+        print("Info:", result.stdout)
+        print("Info:", result.stderr)
+
+        if result.returncode != 0:
+            raise Exception(f"Erro ao executar o comando: {command}\nCódigo de saída: {result.returncode}")
+
+    def docker_pull():
+        print("Baixando a imagem Docker...")
+        try:
+            run_command(["sudo", "sh", "-c", "docker pull e4ong1031/vaxign-ml:latest"])
+        except Exception as e:
+            print(f"Erro ao rodar docker pull: {e}")
+
+    # Passo 2: Baixar o script VaxignML.sh
+    def download_script():
+        print("Baixando o script VaxignML.sh...")
+        run_command(["wget", "--no-check-certificate" , "https://raw.githubusercontent.com/VIOLINet/Vaxign-ML-docker/master/VaxignML.sh"])
+
+    # Passo 3: Dar permissão de execução no script
+    def make_script_executable():
+        print("Dando permissão de execução ao script...")
+        run_command(["chmod", "a+x", "VaxignML.sh"])
+
+    #Passo 4: executar o vaxignml
+    def run_vaxignml_script(input_path, output_path, organism_type):
+        try:
+            command = ["./VaxignML.sh", input_path, output_path, organism_type]
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            print(f"VaxignML iniciado com PID: {process.pid}")
+
+            # Espera 10 segundos e verifica se o processo ainda está rodando
+            import time
+            time.sleep(10)
+            
+            retcode = process.poll()
+            if retcode is None:
+                print("O processo está sendo executado!")
+            else:
+                print(f"O processo terminou rapidamente com código: {retcode}")
+            
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+
+
+    # Caminhos de exemplo (ajuste conforme necessário)
+    current_dir = os.getcwd()
+    input_fasta = os.path.join(current_dir, "Chimeric.faa")  # Arquivo de entrada (faça o download ou coloque o arquivo desejado)
+    output_directory = current_dir  # Diretório de saída
+    organism_type = "gram-"  # Tipo de organismo (exemplo: gram-)
+
+    # Execução das etapas
+    docker_pull()
+    download_script()
+    make_script_executable()
+    run_vaxignml_script(input_fasta, output_directory, organism_type)
+    
+    if wait_for_file("Chimeric.result.tsv"):
+        print("Prosseguindo com a execução...")
+    else:
+        print("Encerrando devido à ausência do arquivo.")
+
+    # Carregar o arquivo TSV
+    df = pd.read_csv("Chimeric.result.tsv", sep="\t")
+
+    # Salvar como CSV
+    df.to_csv("Chimeric_result.csv", index=False)
+    print("Conversão concluída: Chimeric.result.tsv -> Chimeric_result.csv")
 
     # 9.1.2 Vaxijen proteins filtering
-    Vaxijen = pd.read_csv("VaxijenResults.txt",skiprows=1,sep=":")
-    Vaxijen.columns=["Model","Value"]
-    Vaxijen.to_csv('Vaxijen.csv',  
-                            index = None)
-    os.remove("VaxijenResults.txt")
-    VaxFinal = pd.read_csv("Vaxijen.csv",sep=",")
-    VaxFinal1 = VaxFinal.sort_values(by=["Value"], ascending= False)
-    VaxModelName = VaxFinal1.filter(["Model"])
-    VaxModelName.to_csv("Vaxijen.txt", header=False, index = None)
 
-    with open("Vaxijen.txt","r") as vaxi:
-        firstlineMODEL = vaxi.readline().rstrip()
-        NameOfTheTopModel = firstlineMODEL + ":"
-    oldtime = "\n"
-    newtime = ""
-    with open("Chimeric.faa","r") as trocadetxt1:
-        dataler1 = trocadetxt1.read()
-        dataler1 = dataler1.replace(oldtime, newtime)
-    with open("Chimeric.faa", "w") as file_1_:
-        file_1_.write(dataler1)
+    # 1. Ler e processar o TSV
+    print("Leitura e processamento do TSV")
+    VaxFinal = pd.read_csv("Chimeric.result.tsv", sep="\t")
+    VaxFinal.columns = VaxFinal.columns.str.strip()  # Remover espaços dos cabeçalhos
+    VaxFinal["protegenicity"] = VaxFinal["protegenicity"].astype(float)  # Garantir que seja float
+
+    # 2. Ordenar pelo maior protegenicity
+    VaxFinal1 = VaxFinal.sort_values(by="protegenicity", ascending=False)
+
+    # 3. Salvar a amostra com maior protegenicity
+    print("Salvando amostra com maior protegenicity")
+    VaxModelName = VaxFinal1[["sample"]]
+    VaxModelName.to_csv("Vaxijen.txt", header=False, index=False)
+
+    # 4. Extrair o melhor modelo
+    with open("Vaxijen.txt", "r") as vaxi:
+        firstlineMODEL = vaxi.readline().strip()
+        NameOfTheTopModel = firstlineMODEL.rstrip(":")  # Remove ':' do final
+
+    # 5. Reformatar o arquivo FASTA
     with open("Chimeric.faa", "r") as chimeric_proteins:
-        reading_ = chimeric_proteins.read()
-        reading_ = reading_.split(">")
-        
-    Acaba1 = NameOfTheTopModel + "\n"
-    letrinha = ">"
-    for ia in range(0,len(letrinha)):
-        NameOfTheTopModel1 =NameOfTheTopModel.replace(letrinha[ia],"")
-        for protein in reading_:
-            if NameOfTheTopModel1 in protein:
-                with open("YourFinalModel.faa","w") as finalmodel:
-                    finalmodel.writelines(protein)
-                with open("YourFinalModel.faa","r") as editar:
-                    arrumaisso = editar.read()
-                    arrumaisso = arrumaisso.replace(NameOfTheTopModel1,Acaba1)
-                    with open("YourFinalModel.faa", "w") as filezinho2:
-                        filezinho2.write(arrumaisso)
-    quebradetextMAIS = "\n>"
-    with open("Chimeric.faa","r") as ArrumarQuimeras:
-        ArrumarQuimerasBora = ArrumarQuimeras.read()
-        ArrumarQuimerasBora = ArrumarQuimerasBora.replace(letrinha,quebradetextMAIS)
+        reading_ = chimeric_proteins.read().split(">")
+
+    # 6. Buscar a melhor sequência e salvar
+    for protein in reading_:
+        if NameOfTheTopModel in protein:
+            with open("YourFinalModel.faa", "w") as finalmodel:
+                finalmodel.write(f">{protein}")  # Adicionar ">" na frente
+
+    # 7. Ajustar o formato do Chimeric.faa
+    with open("Chimeric.faa", "r") as ArrumarQuimeras:
+        ArrumarQuimerasBora = ArrumarQuimeras.read().replace("\n>", "\n>\n")
+
     with open("Chimeric.faa", "w") as ArrumarQuimerasFINALMENTE:
         ArrumarQuimerasFINALMENTE.write(ArrumarQuimerasBora)
+
+    # 8. Remover o arquivo temporário
     os.remove("Vaxijen.txt")
+
 
     reading_your_final_model = pd.read_csv("YourFinalModel.faa")
     reading_your_final_model.to_csv("FinalSemCabeca.txt", header=None, index=None)
@@ -795,38 +893,43 @@ def predicao(data):
         leituradotrem = semcabeca.read()
     
     #10.0 Allertop prediction
+    print("Allertop prediction")
     navegadorALLER = webdriver.Firefox(options=firefox_options)
-    navegadorALLER.get("https://www.ddg-pharmfac.net/AllerTOP/")    
-    navegadorALLER.find_element(By.XPATH, '//*[@id="sequence"]').send_keys(leituradotrem)
-    time.sleep(2)
-    navegadorALLER.find_element(By.XPATH, '//*[@id="protein_sequence"]/table/tbody/tr[3]/td[1]/input').click()
+    navegadorALLER.get("https://allercatpro.bii.a-star.edu.sg/")    
+    navegadorALLER.find_element(By.XPATH, '//*[@id="seq"]').send_keys(">Multi-epitope\n" + leituradotrem)
     time.sleep(5)
-    vamoslerisso = navegadorALLER.find_element(By.XPATH, '//*[@id="protein_sequence"]/table/tbody/tr/td')
-    vamoslerisso1 = vamoslerisso.text
+    navegadorALLER.find_element(By.XPATH, '/html/body/center/font/form/input[2]').click()
+    time.sleep(5)
+    total_height = navegadorALLER.execute_script("return document.body.scrollHeight")
+    navegadorALLER.set_window_size(1920, total_height)
+    navegadorALLER.save_screenshot("Allertop.png")
 
     #11.0 ProtParam prediction
-    navegadorALLER.get("https://web.expasy.org/protparam/")    
-    navegadorALLER.find_element(By.XPATH, '//*[@id="sib_body"]/form/textarea').send_keys(leituradotrem)
-    time.sleep(2)
-    navegadorALLER.find_element(By.XPATH, '//*[@id="sib_body"]/form/p[1]/input[2]').click()
-    time.sleep(5)
-    vamoslerisso2 = navegadorALLER.find_element(By.XPATH, '//*[@id="sib_body"]/pre[2]')
+    print("ProtParam prediction")
+    navegadorALLER.get("https://web.expasy.org/protparam/")
+    time.sleep(10)    
+    navegadorALLER.find_element(By.XPATH, '/html/body/main/div/form/textarea').send_keys(leituradotrem)
+    time.sleep(10)
+    navegadorALLER.find_element(By.XPATH, '/html/body/main/div/form/input[3]').click()
+    time.sleep(10)
+    vamoslerisso2 = navegadorALLER.find_element(By.XPATH, '/html/body/main/div/pre[2]')
+
     vamoslerisso3 = vamoslerisso2.text
 
     #12.0 PSIPRED prediction
-    navegadorALLER.get("http://bioinf.cs.ucl.ac.uk/psipred/")  
+    print("PSIPRED prediction")
+    navegadorALLER.get("http://bioinf.cs.ucl.ac.uk/psipred/")
+    time.sleep(10)
     navegadorALLER.find_element(By.XPATH, '//*[@id="id_job_name"]').send_keys("VaxG")
     navegadorALLER.find_element(By.XPATH, '//*[@id="id_email"]').send_keys("bioinformaticsuftm@gmail.com")
     navegadorALLER.find_element(By.XPATH, '//*[@id="id_input_data"]').send_keys(leituradotrem)
-    time.sleep(2)
+    time.sleep(10)
     navegadorALLER.find_element(By.XPATH, '//*[@id="main_form"]/div[6]/input[2]').click()
-    time.sleep(5)
+    time.sleep(10)
     pegarurl = navegadorALLER.current_url
 
     #13.0 Getting results
     navegadorALLER.close()
-    with open("Aller.txt","w") as escritadisso:
-        hamescreveisso = escritadisso.writelines(vamoslerisso1)
     with open("ProtParam.txt","w") as escritadisso1:
         hamescreveisso1 = escritadisso1.writelines(vamoslerisso3)
     with open("PsiPred.txt","w") as escritadisso2:
@@ -835,6 +938,7 @@ def predicao(data):
 
     ###############
     # First Image Generation
+    print("Gerando primeira imagem")
     from PIL import Image, ImageDraw, ImageFont 
 
     with open('Your_Final_Epitopes.txt', 'r') as arquivo:
@@ -859,6 +963,7 @@ def predicao(data):
     listaparaimagem = lista_epitopos_maior_11_ordenada + lista_epitopos_menor_11_ordenada
 
     # Função para criar a imagem com os epitopos e os linkers
+    print("Criando iamgem com os epitopos e linkers")
     def criar_imagem_epitopos(partes, adjuvante_texto=""):
         margem = 10 
         altura_retangulo = 50 
@@ -924,6 +1029,7 @@ def predicao(data):
 
     ###############
     # Second Image Generation
+    print("Gerando segunda imagem")
     #Sum of the total value of the epitopes by step
     somatoriadas = pd.read_csv('output.csv')
     somas_colunas = somatoriadas.sum()
@@ -1052,6 +1158,7 @@ def predicao(data):
 
 
     ### ZIPPING mhcintermediaries files
+    print("Salvando arquivos intermediarios")
     caminho_pasta_atual = os.getcwd()
     nome_arquivo_zip = "MHCintermediariesFILES.zip"
 
@@ -1062,15 +1169,18 @@ def predicao(data):
                 arquivo_zip.write(caminho_completo, nome_arquivo)
 
     #Saving the results into one zip file
+    print("Salvando os resultados finais")
     z = zipfile.ZipFile('Final.zip', 'w', zipfile.ZIP_DEFLATED)
-    z.write('Aller.txt')
+    z.write('Allertop.png')
     z.write('Chimeric.faa')
     z.write('ProtParam.txt')
     z.write('PsiPred.txt')
     z.write('Your_Final_Epitopes.txt')
     z.write('YourFinalModel.faa')
-    z.write('Vaxijen.csv')
+    z.write('Chimeric_result.csv')
     z.write('sequence.png')
     z.write('flowchart.png')
     z.write('output.csv')
     z.close()
+    
+    return redirect('/recebidos/')

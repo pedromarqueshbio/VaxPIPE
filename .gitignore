@@ -1,0 +1,37 @@
+# Arquivos compilados do Python
+__pycache__/
+*.py[cod]
+
+# Banco de dados SQLite
+db.sqlite3
+*.sqlite3
+
+# Arquivos de ambiente
+.env
+*.env
+
+# Logs e arquivos temporários
+*.log
+*.bak
+*.swp
+*.swo
+
+# Configurações do editor
+.vscode/
+.idea/
+*.iml
+
+# Dependências do Python (caso use virtualenv)
+venv/
+vaxpipe/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Arquivos do Django
+staticfiles/
+media/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db

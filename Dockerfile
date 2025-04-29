@@ -1,32 +1,57 @@
-FROM python:3.9
+FROM docker:dind
 
-# Install Firefox and other dependencies
-RUN apt-get update && apt-get install -y firefox-esr xvfb
+# Evitar prompts interativos na instalação
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Python packages
-RUN pip install selenium
+# Atualizar pacotes e instalar dependências do sistema
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    py3-virtualenv \
+    xvfb \
+    xauth \
+    curl \
+    wget \
+    zip \
+    sudo \
+    ca-certificates \
+    gnupg \
+    fuse-overlayfs \
+    bash \
+    firefox \
+    build-base \
+    python3-dev \
+    libffi-dev \
+    musl-dev \
+    openssl-dev \
+    lapack-dev \
+    freetype-dev \
+    libpng-dev \
+    openblas-dev \
+    libxml2-dev \
+    libxslt-dev \
+    jpeg-dev \
+    zlib-dev
 
-# Install xvfb and xauth packages
-RUN apt-get install -y xvfb xauth
+RUN pip3 install --no-cache-dir selenium --break-system-packages
 
-RUN apt-get install -y zip
 
-# Copie o arquivo requirements.txt para o diretório de trabalho
-COPY requirements.txt .
+# Baixar e instalar o geckodriver (necessário para Selenium + Firefox)
+RUN curl -sSL https://github.com/mozilla/geckodriver/releases/download/v0.36.0/geckodriver-v0.36.0-linux64.tar.gz | tar -xz -C /usr/local/bin
 
-# Instale as dependências do Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Definir o diretório de trabalho
+WORKDIR /vaxpipe
 
-# Defina o diretório de trabalho dentro do contêiner
-WORKDIR /app
+# Copiar e instalar dependências do Python
+COPY requirements .
+RUN pip3 install --no-cache-dir -r requirements --break-system-packages
 
-# Copie o restante dos arquivos do aplicativo para o diretório de trabalho
+# Copiar o restante dos arquivos do aplicativo para o diretório de trabalho
 COPY . .
 
-# Exponha a porta em que o Django está sendo executado
+# Expor a porta do Django
 EXPOSE 8000
 
-# Comando para iniciar o servidor Django quando o contêiner for iniciado
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
+# Iniciar o Docker dentro do contêiner e rodar o Django
+CMD ["sh", "-c", "dockerd-entrypoint.sh & sleep 3 && python manage.py runserver 0.0.0.0:8000"]
 

@@ -55,7 +55,8 @@ class Dados(FormView):
                 email = form.cleaned_data['email']
                 with open('email.str', 'w') as file:
                     file.write(email)
-
+                with open ('analysisname.str', 'w') as file:
+                    file.write (analysisname)
                 # sessions
                 self.request.session['analysisname'] = analysisname
                 self.request.session['adjuvant'] = adjuvant
