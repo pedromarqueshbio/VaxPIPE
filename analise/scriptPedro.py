@@ -54,7 +54,17 @@ arquivos_para_apagar = [
     "PsiPred.txt",
     "YourFinalModel.faa",
     "flowchart.png",
-    "sequence.png"
+    "sequence.png",
+    "email.str",
+    "analysisname.str",
+    "IEDBmhci.csv",
+    "IEDBmhcii.csv",
+    "IEDBmhci.txt",
+    "NETmhci.csv",
+    "NETmhcii.csv",
+    "output.csv",
+    "IEDBmhcii.txt",
+    "NETmhci.txt"
 ]
 
 # Remover os arquivos se existirem
@@ -503,12 +513,8 @@ def predicao(data):
         os.remove("NETepi2.csv")
         os.remove("NETmhc1FIL.csv")
         os.remove("NETmhc2FIL.csv")
-        #Remove all the txt files from the overlapping
-        pasta = './'
-        for diretorio, subpastas, arquivos in os.walk(pasta):
-            for arquivo in arquivos:
-                if "out.txt" in arquivo:
-                    os.remove(arquivo)  
+        current_dir = os.getcwd()
+        os.system("rm -f *out.txt")
     proteinas_lista_tratada = list(set(proteinas_lista))
     proteinas_lista_tratada = [f"Protein{proteina}" for proteina in proteinas_lista_tratada]
     print(proteinas_lista_tratada)
@@ -750,13 +756,10 @@ def predicao(data):
     with open(r'Chimeric.faa', 'w') as file:
         file.write(data)
 
-    # 9.1 Selection of the chimeric model with the highest antigenicity by VaxignML
-    # 9.1.1 VaxignML accesion
-
     def wait_for_file(filename, timeout=300, check_interval=5):
         """
         Aguarda até que um arquivo seja criado.
-        
+
         :param filename: Nome do arquivo a ser verificado.
         :param timeout: Tempo máximo de espera em segundos (padrão: 300s).
         :param check_interval: Intervalo entre verificações (padrão: 5s).
@@ -772,67 +775,43 @@ def predicao(data):
         print(f"Arquivo {filename} encontrado!")
         return True
 
-    # Função para rodar um comando e capturar a saída
     def run_command(command):
+        """
+        Executa um comando via subprocess e exibe stdout/stderr.
+        """
         print(f"Executando o comando: {' '.join(command)}")
         result = subprocess.run(command, capture_output=True, text=True)
-        print("Info:", result.stdout)
-        print("Info:", result.stderr)
+        print("Saída:", result.stdout)
+        print("Erros:", result.stderr)
 
         if result.returncode != 0:
             raise Exception(f"Erro ao executar o comando: {command}\nCódigo de saída: {result.returncode}")
 
-    def docker_pull():
-        print("Baixando a imagem Docker...")
+    def run_vaxignml(input_path, output_path, organism_type):
+        """
+        Executa o VaxignML diretamente via Python.
+        """
         try:
-            run_command(["sudo", "sh", "-c", "docker pull e4ong1031/vaxign-ml:latest"])
+            command = [
+                "python3.6", "VaxignML.py",
+                "-i", input_path,
+                "-o", output_path,
+                "-t", organism_type
+            ]
+            run_command(command)
         except Exception as e:
-            print(f"Erro ao rodar docker pull: {e}")
-
-    # Passo 2: Baixar o script VaxignML.sh
-    def download_script():
-        print("Baixando o script VaxignML.sh...")
-        run_command(["wget", "--no-check-certificate" , "https://raw.githubusercontent.com/VIOLINet/Vaxign-ML-docker/master/VaxignML.sh"])
-
-    # Passo 3: Dar permissão de execução no script
-    def make_script_executable():
-        print("Dando permissão de execução ao script...")
-        run_command(["chmod", "a+x", "VaxignML.sh"])
-
-    #Passo 4: executar o vaxignml
-    def run_vaxignml_script(input_path, output_path, organism_type):
-        try:
-            command = ["./VaxignML.sh", input_path, output_path, organism_type]
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-            print(f"VaxignML iniciado com PID: {process.pid}")
-
-            # Espera 10 segundos e verifica se o processo ainda está rodando
-            import time
-            time.sleep(10)
-            
-            retcode = process.poll()
-            if retcode is None:
-                print("O processo está sendo executado!")
-            else:
-                print(f"O processo terminou rapidamente com código: {retcode}")
-            
-        except Exception as e:
-            print(f"Erro inesperado: {e}")
-
+            print(f"Erro ao rodar VaxignML: {e}")
 
     # Caminhos de exemplo (ajuste conforme necessário)
     current_dir = os.getcwd()
-    input_fasta = os.path.join(current_dir, "Chimeric.faa")  # Arquivo de entrada (faça o download ou coloque o arquivo desejado)
-    output_directory = current_dir  # Diretório de saída
-    organism_type = "gram-"  # Tipo de organismo (exemplo: gram-)
+    input_fasta = os.path.join(current_dir, "Chimeric.faa")  # Arquivo de entrada
+    output_directory = current_dir 
+    organism_type = "gram-"  # Tipo de organismo
 
-    # Execução das etapas
-    docker_pull()
-    download_script()
-    make_script_executable()
-    run_vaxignml_script(input_fasta, output_directory, organism_type)
-    
+    # Executar VaxignML diretamente
+    run_vaxignml(input_fasta, output_directory, organism_type)
+
+    # Verificar se o resultado foi gerado
     if wait_for_file("Chimeric.result.tsv"):
         print("Prosseguindo com a execução...")
     else:
