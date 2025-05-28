@@ -111,7 +111,7 @@ RUN pip3.6 install --no-cache-dir \
     pathlib 
 
 # Instala o Geckodriver (para Selenium + Firefox)
-RUN curl -sSL https://github.com/mozilla/geckodriver/releases/download/v0.36.0/geckodriver-v0.36.0-linux64.tar.gz \
+RUN curl -sSL https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz \
     | tar -xz -C /usr/local/bin
 
 # Cria diretório de trabalho

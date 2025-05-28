@@ -14,11 +14,11 @@
 
 • At the command prompt, use the following command:
 
-• ***docker pull openheimerfinger/vaxg:beta***
+• ***docker pull openheimerfinger/vaxg:beta2***
 
 And then:
 
-•	***docker run -p 8000:8000 --name vaxpipe --user root -it openheimerfinger/vaxg:beta***
+•	***docker run --rm -p 8000:8000 --name vaxpipe --user root -it openheimerfinger/vaxg:beta2***
 
 After that, just go to the following link in your browser:
 

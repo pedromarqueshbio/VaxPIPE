@@ -12,6 +12,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from django.shortcuts import redirect
 
 
@@ -215,28 +217,29 @@ def predicao(data):
                           index = None)
         os.remove("NETmhcii.txt")
 
-#2.3 ABCpred prediction via selenium
+        #2.3 ABCpred prediction via selenium
         #2.3.1 Firefox headless option
         firefox_options = Options()
         firefox_options.add_argument("--headless")
         nav = webdriver.Firefox(options=firefox_options)
-        time.sleep(2)
+        wait = WebDriverWait(nav, 30)
+
         nav.get("https://webs.iiitd.edu.in/raghava/abcpred/ABC_submission.html")
-        time.sleep(5)
-        #2.3.2 Getting elements
-        nav.find_element(By.XPATH, '/html/body/form/font/textarea').send_keys(targets)
-        nav.find_element(By.XPATH,'/html/body/form/p[2]/input[2]').click()
-        time.sleep(15)
-        #2.3.3 Storing results
-        tabeladonav = nav.find_element(By.XPATH, '/html/body/pre[2]/table/tbody')
+
+        # 2.3.2 Getting elements
+        wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/form/font/textarea'))).send_keys(targets)
+        wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/form/p[2]/input[2]'))).click()
+
+        # 2.3.3 Storing results
+        tabeladonav = wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/pre[2]/table/tbody')))
         lernav = tabeladonav.text
         nav.close()
-        #2.3.4 Converting the ABCpred output to csv file
+
+        # 2.3.4 Converting the ABCpred output to csv file
         with open("Bcell0.csv", "w") as f:
             f.writelines(lernav)
         lerBcell = pd.read_csv("Bcell0.csv", sep=" ")
-        lerBcell.to_csv('Bcell.csv',  
-                          index = None)
+        lerBcell.to_csv('Bcell.csv', index=None)
         os.remove("Bcell0.csv")
 
         #3.0 Filtering the epitopes by IC50 and percentil rank
@@ -782,7 +785,8 @@ def predicao(data):
         print(f"Executando o comando: {' '.join(command)}")
         result = subprocess.run(command, capture_output=True, text=True)
         print("Saída:", result.stdout)
-        print("Erros:", result.stderr)
+        if result.stderr:  # Verifica se há erros no stderr
+            print("Erros:", result.stderr)
 
         if result.returncode != 0:
             raise Exception(f"Erro ao executar o comando: {command}\nCódigo de saída: {result.returncode}")
