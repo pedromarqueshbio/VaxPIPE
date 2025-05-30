@@ -14,6 +14,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from django.shortcuts import redirect
 
 
@@ -219,21 +220,36 @@ def predicao(data):
 
         #2.3 ABCpred prediction via selenium
         #2.3.1 Firefox headless option
-        firefox_options = Options()
-        firefox_options.add_argument("--headless")
-        nav = webdriver.Firefox(options=firefox_options)
-        wait = WebDriverWait(nav, 30)
+        max_tentativas = 30
+        tentativa = 0
 
-        nav.get("https://webs.iiitd.edu.in/raghava/abcpred/ABC_submission.html")
+        while tentativa < max_tentativas:
+            try:
+                firefox_options = Options()
+                firefox_options.add_argument("--headless")
+                nav = webdriver.Firefox(options=firefox_options)
+                wait = WebDriverWait(nav, 30)
 
-        # 2.3.2 Getting elements
-        wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/form/font/textarea'))).send_keys(targets)
-        wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/form/p[2]/input[2]'))).click()
+                nav.get("https://webs.iiitd.edu.in/raghava/abcpred/ABC_submission.html")
 
-        # 2.3.3 Storing results
-        tabeladonav = wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/pre[2]/table/tbody')))
-        lernav = tabeladonav.text
-        nav.close()
+                # 2.3.2 Getting elements
+                wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/form/font/textarea'))).send_keys(targets)
+                wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/form/p[2]/input[2]'))).click()
+
+                # 2.3.3 Storing results
+                tabeladonav = wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/pre[2]/table/tbody')))
+                lernav = tabeladonav.text
+                nav.quit()
+                break  # deu certo, sai do loop
+
+            except (TimeoutException, NoSuchElementException, WebDriverException) as e:
+                print(f"Tentativa {tentativa + 1} falhou: {e}. Tentando novamente...")
+                nav.quit()
+                tentativa += 1
+                time.sleep(2)  # espera 2 segundos antes de tentar novamente
+
+        else:
+            raise Exception("Falha ao enviar o formulário do ABCPred após várias tentativas.")
 
         # 2.3.4 Converting the ABCpred output to csv file
         with open("Bcell0.csv", "w") as f:
